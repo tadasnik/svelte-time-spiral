@@ -14,7 +14,7 @@
   export let metricAccessor = (d) => d["x"];
   export let timeAccessor = (d) => d["date"];
 
-  const angleScaleRotate = 360 / 4.5;
+  const angleScaleRotate = 360 / 4.8;
 
   const progressInYearAccessor = (d) => {
     const date = timeAccessor(d);

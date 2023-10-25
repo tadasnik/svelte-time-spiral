@@ -87,39 +87,22 @@
     const start = $xScale($xDomain[0]);
     const end = $xScale($xDomain[1]);
     console.log(angle, start, end);
-    const { x1, y1 } = getPositionFromDistanceAndAngle(start, angle);
-    const { x2, y2 } = getPositionFromDistanceAndAngle(end, angle);
+    const startCoords = getPositionFromDistanceAndAngle(start, angle);
+    const endCoords = getPositionFromDistanceAndAngle(end, angle);
     return {
       i,
       name: month,
       angle,
-      x1: x1,
-      y1: y1,
-      x2: x2,
-      y2: y2,
+      x1: startCoords.x,
+      y1: startCoords.y,
+      x2: endCoords.x,
+      y2: endCoords.y,
     };
   });
   $: console.log(months);
 </script>
 
 <g transform="translate({$width / 2}, {$height / 2})">
-  <circle
-    cx="0"
-    cy="0"
-    r={max}
-    stroke="#ccc"
-    stroke-width="1"
-    fill="#CDCDCD"
-    fill-opacity="0.1"
-  />
-  <circle
-    cx="0"
-    cy="0"
-    r={max / 2}
-    stroke="#ccc"
-    stroke-width="1"
-    fill="none"
-  />
   {#each months as month, i}
     <line
       x1={month.x1}
@@ -127,7 +110,8 @@
       x2={month.x2}
       y2={month.y2}
       stroke="#ccc"
-      stroke-width="1"
+      stroke-width="2"
+      stroke-dasharray="4 4"
       fill="none"
     />
     <!--   <text -->
