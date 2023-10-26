@@ -2,14 +2,12 @@
   import { getContext } from "svelte";
   import { scaleLinear } from "d3-scale";
   import { extent, range } from "d3-array";
-  import { timeFormat } from "d3-time-format";
+  import { time, timeFormat } from "d3-time-format";
   import { interpolateHclLong } from "d3-interpolate";
   import { fade } from "svelte/transition";
 
   const { width, height, xScale, yScale, xDomain } = getContext("LayerCake");
-  $: max = $xScale($xDomain[1]);
 
-  $: console.log("max", max);
   // Rotate the spiral so that mid January is on Y axis
   //   const angleScaleRotate = 360 / 4.5;
   //
@@ -80,15 +78,29 @@
   const monthNames = range(0, 12).map((i) =>
     timeFormat("%b")(new Date(2000, i, 1))
   );
-  $: lastDate = new Date($xDomain[1]);
-  // var newDate = new Date(date.setMonth(date.getMonth() + 8));
+
+  const startDate = new Date($xDomain[0]);
+  const lastDate = new Date($xDomain[1]);
+  const extStartDate = new Date(
+    startDate.setFullYear(startDate.getFullYear() - 1)
+  );
+  const extEndDate = new Date(lastDate.setFullYear(lastDate.getFullYear() + 1));
+  console.log(extStartDate);
+  console.log($xScale.clamp());
+
   $: months = monthNames.map((month, i) => {
     const angle = $yScale((360 / 12) * i);
     const start = $xScale($xDomain[0]);
     const end = $xScale($xDomain[1]);
-    console.log(angle, start, end);
-    const startCoords = getPositionFromDistanceAndAngle(start, angle);
-    const endCoords = getPositionFromDistanceAndAngle(end, angle);
+    const startCoords = getPositionFromDistanceAndAngle(
+      $xScale(extStartDate.getTime()),
+      angle
+    );
+    const endCoords = getPositionFromDistanceAndAngle(
+      $xScale(extEndDate.getTime()),
+      angle
+    );
+    console.log();
     return {
       i,
       name: month,
@@ -99,7 +111,6 @@
       y2: endCoords.y,
     };
   });
-  $: console.log(months);
 </script>
 
 <g transform="translate({$width / 2}, {$height / 2})">
@@ -111,7 +122,7 @@
       y2={month.y2}
       stroke="#ccc"
       stroke-width="2"
-      stroke-dasharray="4 4"
+      stroke-dasharray="6 6"
       fill="none"
     />
     <!--   <text -->
