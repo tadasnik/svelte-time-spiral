@@ -2,119 +2,97 @@
   import { getContext } from "svelte";
   import { scaleLinear } from "d3-scale";
   import { extent, range } from "d3-array";
-  import { time, timeFormat } from "d3-time-format";
+  import { timeFormat } from "d3-time-format";
+  import { timeDay, timeMonth, timeYear } from "d3-time";
   import { interpolateHclLong } from "d3-interpolate";
   import { fade } from "svelte/transition";
 
   const { width, height, xScale, yScale, xDomain } = getContext("LayerCake");
+  const monthFormat = timeFormat("%b");
 
-  // Rotate the spiral so that mid January is on Y axis
-  //   const angleScaleRotate = 360 / 4.5;
-  //
-  //   $: minDim = $width < $height ? $width : $height;
-  //
-  //   $: metricDomain = [0, 70];
-  //   $: timeDomain = extent(data, timeAccessor);
-  //
-  //   $: colorScale = scaleLinear()
-  //     .domain([
-  //       0,
-  //       metricDomain[1] / 3,
-  //       (metricDomain[1] / 3) * 2,
-  //       metricDomain[1],
-  //     ])
-  //     .range(["#f4f4f4", "#89BC97", "#5D2EDD", "#000"])
-  //     .interpolate(interpolateHclLong);
-  //
-  //   $: radiusScale = scaleLinear()
-  //     .domain(timeDomain)
-  //     .range([(minDim / 2) * 0.4, minDim / 2 - 10]);
-  //   $: angleScale = scaleLinear()
-  //     .domain([0, 365])
-  //     .range([0 + angleScaleRotate, 360 + angleScaleRotate]);
-  //
-  //   $: distanceBetweenYears = (startUT, endUT) => {
-  //     const endDist = radiusScale(timeAccessor(startUT));
-  //     const startDist = radiusScale(timeAccessor(endUT));
-  //     return Math.abs(endDist - startDist);
-  //   };
-  //
-  //   $: cycleDistance = distanceBetweenYears(data[0], data[365]) * 0.9;
-  //   const getPositionFromDistanceAndAngle = (distance, angle) => {
-  //     const x = distance * Math.cos((angle * Math.PI) / 180);
-  //     const y = distance * Math.sin((angle * Math.PI) / 180);
-  //     return { x, y };
-  //   };
-  //
-  //   $: getArc = (d) => {
-  //     const distance = radiusScale(d.date);
-  //     const startAngle = angleScale(d.doy - 0.5);
-  //     const endAngle = angleScale(d.doy + 0.5);
-  //     const { x, y } = getPositionFromDistanceAndAngle(distance, startAngle);
-  //     const endCords = getPositionFromDistanceAndAngle(distance, endAngle);
-  //     return [
-  //       "M",
-  //       x,
-  //       y,
-  //       "A",
-  //       distance,
-  //       distance,
-  //       0,
-  //       0,
-  //       1,
-  //       endCords.x,
-  //       endCords.y,
-  //     ].join(" ");
-  //   };
-  //   $: console.log("radius scale data 0", radiusScale(timeAccessor(data[0])));
-  //   $: console.log(radiusScale(timeAccessor(data[31])));
-  //   $: console.log("cycleDist", cycleDistance);
+  const dayOfYear = (date) => {
+    return timeDay.count(timeYear.floor(date), date);
+  };
+
+  function monthNames(dates) {
+    dates.map((date) => {
+      return { monthName: monthFormat(date) };
+    });
+  }
+
   const getPositionFromDistanceAndAngle = (distance, angle) => {
     const x = distance * Math.cos((angle * Math.PI) / 180);
     const y = distance * Math.sin((angle * Math.PI) / 180);
     return { x, y };
   };
 
-  const monthNames = range(0, 12).map((i) =>
-    timeFormat("%b")(new Date(2000, i, 1))
-  );
-
   const startDate = new Date($xDomain[0]);
   const lastDate = new Date($xDomain[1]);
   const extStartDate = new Date(
     startDate.setFullYear(startDate.getFullYear() - 1)
   );
-  const extEndDate = new Date(lastDate.setFullYear(lastDate.getFullYear() + 1));
-  console.log(extStartDate);
-  console.log($xScale.clamp());
 
-  $: months = monthNames.map((month, i) => {
-    const angle = $yScale((360 / 12) * i);
+  let extEndDate = new Date(lastDate.getTime());
+  extEndDate.setFullYear(extEndDate.getFullYear() + 1);
+  const monthsNextYear = timeMonth.range(lastDate, extEndDate);
+
+  $: console.log("before", monthsNextYear);
+  $: console.log(
+    new Date(
+      lastDate.getYear(),
+      lastDate.getMonth(),
+      lastDate.getDate()
+    ).setMonth(lastDate.getMonth() + 1)
+  );
+
+  $: monthProps = monthsNextYear.map((month, i) => {
     const start = $xScale($xDomain[0]);
-    const end = $xScale($xDomain[1]);
-    const startCoords = getPositionFromDistanceAndAngle(
-      $xScale(extStartDate.getTime()),
-      angle
-    );
-    const endCoords = getPositionFromDistanceAndAngle(
-      $xScale(extEndDate.getTime()),
-      angle
-    );
-    console.log();
+    const end = $xScale(month.getTime());
+    const startAngle = $yScale(dayOfYear(month));
+    const startCoords = getPositionFromDistanceAndAngle(start, startAngle);
+    const endCoords = getPositionFromDistanceAndAngle(end, startAngle);
+    const endAngle =
+      i < monthsNextYear.length - 1
+        ? $yScale(dayOfYear(monthsNextYear[i + 1]))
+        : $yScale(
+            dayOfYear(
+              new Date(
+                month.getYear(),
+                month.getMonth(),
+                month.getDate()
+              ).setMonth(month.getMonth() + 1)
+            )
+          );
+    const arcEndCoords = getPositionFromDistanceAndAngle(end, endAngle);
     return {
       i,
-      name: month,
-      angle,
+      name: monthFormat(month),
       x1: startCoords.x,
       y1: startCoords.y,
       x2: endCoords.x,
       y2: endCoords.y,
+      x3: arcEndCoords.x,
+      y3: arcEndCoords.y,
     };
   });
+
+  $: console.log(monthsNextYear, monthProps);
+  $: getArc = (d) => {
+    const distance = $xScale($xDomain[1]);
+    // const startAngle = $yScale(d.y2);
+    // const endAngle = $yScale(d.y3);
+    // const { x, y } = getPositionFromDistanceAndAngle(distance, startAngle);
+    // const endCords = getPositionFromDistanceAndAngle(distance, endAngle);
+    return ["M", d.x2, d.y2, "A", distance, distance, 0, 0, 1, d.x3, d.y3].join(
+      " "
+    );
+  };
+
+  $: console.log(monthFormat(lastDate));
 </script>
 
 <g transform="translate({$width / 2}, {$height / 2})">
-  {#each months as month, i}
+  {#each monthProps as month, i}
     <line
       x1={month.x1}
       y1={month.y1}
@@ -122,9 +100,14 @@
       y2={month.y2}
       stroke="#ccc"
       stroke-width="2"
-      stroke-dasharray="6 6"
       fill="none"
     />
+    <path id={month.i} fill="none" d={getArc(month)} />
+    <text>
+      <textPath href="#{month.i}" startOffset="50%" text-anchor="middle"
+        >{month.name}</textPath
+      >
+    </text>
     <!--   <text -->
     <!--     text-anchor={anchor($config.x.length, i)} -->
     <!--     dy="0.35em" -->
