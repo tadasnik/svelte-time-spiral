@@ -13,7 +13,6 @@
 
   // Rotate the spiral so that mid January is on Y axis
 
-  $: metricDomain = [0, 70];
   $: timeDomain = extent(data, timeAccessor);
 
   $: colorScale = scaleLinear()
@@ -54,7 +53,7 @@
       endCords.y,
     ].join(" ");
   };
-  $: console.log("zDomain", $zDomain);
+  // $: console.log("zDomain", $zDomain);
 </script>
 
 <g transform="translate({$width / 2}, {$height / 2})">

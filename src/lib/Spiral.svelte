@@ -14,7 +14,8 @@
   export let metricAccessor = (d) => d["x"];
   export let timeAccessor = (d) => d["date"];
 
-  const angleScaleRotate = 360 / 4.8;
+  // Rotate the spiral so that mid-January is align with y axis
+  const angleRotate = 360 / 4.8;
 
   const progressInYearAccessor = (d) => {
     const date = timeAccessor(d);
@@ -60,7 +61,7 @@
     .range([height * 0.21, height * 0.41]);
   $: strokeWidthScale = scaleLinear().domain(timeDomain).range([0.3, 0.65]);
   $: angleScale = scaleLinear().domain([0, 365]).range([0, 360]);
-  $: console.log("data", data);
+  // $: console.log("data", data);
 
   const getPositionFromDistanceAndAngle = (distance, angle) => {
     const x = distance * Math.cos((angle * Math.PI) / 180);
@@ -135,7 +136,8 @@
       (width < height ? width : height) / 2,
     ]}
     xDomain={timeDomain}
-    yRange={[0 + angleScaleRotate, 360 + angleScaleRotate]}
+    xPadding={[20, 20]}
+    yRange={[0 + angleRotate, 360 + angleRotate]}
     yDomain={[0, 365]}
     z="fwi"
     {data}
