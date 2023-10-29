@@ -3,7 +3,7 @@
   import { timeFormat } from "d3-time-format";
   import { timeDay, timeMonth, timeYear } from "d3-time";
   import { cartesianFromPolar, xFromPolar, yFromPolar } from "$lib/utils.js";
-  import { addYear, substractYear } from "$lib/timeUtils.js";
+  import { addYear, subtractYear, addMonth } from "$lib/timeUtils.js";
 
   const { width, height, xScale, yScale, xDomain } = getContext("LayerCake");
   const monthFormat = timeFormat("%b");
@@ -14,7 +14,7 @@
 
   const startDate = new Date($xDomain[0]);
 
-  const extStartDate = substractYear($xDomain[0]);
+  const extStartDate = subtractYear($xDomain[0]);
   const monthsPrevYear = timeMonth.range(extStartDate, startDate);
 
   const lastDate = new Date($xDomain[1]);
@@ -34,42 +34,44 @@
     const endAngle =
       i < monthsNextYear.length - 1
         ? $yScale(dayOfYear(monthsNextYear[i + 1]))
-        : $yScale(
-            dayOfYear(
-              new Date(
-                month.getYear(),
-                month.getMonth(),
-                month.getDate()
-              ).setMonth(month.getMonth() + 1)
-            )
-          );
+        : $yScale(dayOfYear(addMonth(month)));
     return {
       i,
       name: monthFormat(month),
-      x1: xFromPolar(start, startAngle),
-      y1: yFromPolar(start, startAngle),
-      x2: xFromPolar(end, startAngle),
-      y2: yFromPolar(end, startAngle),
-      x3: xFromPolar(end, endAngle),
-      y3: yFromPolar(end, endAngle),
+      start,
+      startAngle,
+      end,
+      endAngle,
     };
   });
 
   $: getArc = (d) => {
     const distance = $xScale($xDomain[1]);
-    return ["M", d.x2, d.y2, "A", distance, distance, 0, 0, 1, d.x3, d.y3].join(
-      " "
-    );
+    const startCoords = cartesianFromPolar(d.end, d.startAngle);
+    const endCoords = cartesianFromPolar(d.end, d.endAngle);
+    return [
+      "M",
+      startCoords.x,
+      startCoords.y,
+      "A",
+      distance,
+      distance,
+      0,
+      0,
+      1,
+      endCoords.x,
+      endCoords.y,
+    ].join(" ");
   };
 </script>
 
 <g transform="translate({$width / 2}, {$height / 2})">
   {#each monthProps as month, i}
     <line
-      x1={month.x1}
-      y1={month.y1}
-      x2={month.x2}
-      y2={month.y2}
+      x1={xFromPolar(month.start, month.startAngle)}
+      y1={yFromPolar(month.start, month.startAngle)}
+      x2={xFromPolar(month.end, month.startAngle)}
+      y2={yFromPolar(month.end, month.startAngle)}
       stroke="#ccc"
       stroke-width="2"
       fill="none"
