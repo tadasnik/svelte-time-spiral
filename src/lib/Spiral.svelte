@@ -1,6 +1,6 @@
 <script>
   import { LayerCake, Svg } from "layercake";
-  import { scaleLinear, scaleSqrt } from "d3-scale";
+  import { scaleLinear, scaleSqrt, scaleSequential } from "d3-scale";
   import { extent, range } from "d3-array";
   import { format } from "d3-format";
   import { interpolateHclLong } from "d3-interpolate";
@@ -11,10 +11,11 @@
   import AxesLines from "$lib/AxesLines.svelte";
 
   export let data = [];
-  export let metricAccessor = (d) => d["x"];
-  export let timeAccessor = (d) => d["date"];
+  export let xName = "date";
+  export let yName = "doy";
+  export let z = "fwi";
 
-  // Rotate the spiral so that mid-January is align with y axis
+  // TODO Rotate the spiral so that mid-January is align with y axis
   const angleRotate = 360 / 4.8;
 
   const progressInYearAccessor = (d) => {
@@ -29,18 +30,17 @@
   $: height = width;
 
   $: metricDomain = [0, 70];
-  $: timeDomain = extent(data, timeAccessor);
+  $: xDomain = extent(data, (d) => d[xName]);
+  $: zExtent = extent(data, (d) => d[z]);
+  $: zDomain = [0, zExtent[1] / 3, (zExtent[1] / 3) * 2, zExtent[1]];
 
   $: colorScale = scaleLinear()
-    .domain([
-      0,
-      metricDomain[1] / 3,
-      (metricDomain[1] / 3) * 2,
-      metricDomain[1],
-    ])
+    .domain(zDomain)
     .range(["#f4f4f4", "#89BC97", "#5D2EDD", "#000"])
     .interpolate(interpolateHclLong);
 
+  $: console.log("xDomain main", xDomain);
+  $: console.log("zDomain main", zDomain);
   $: minDim = width < height ? width : height;
   const maxLength = 5;
   $: scaleScale = scaleSqrt().domain(metricDomain).range([0, maxLength]);
@@ -55,11 +55,11 @@
       color: colorScale(d),
     };
   });
-  $: radiusScale = scaleLinear().domain(timeDomain).range([15, 40]);
+  $: radiusScale = scaleLinear().domain(xDomain).range([15, 40]);
   $: yearRadiusScale = scaleLinear()
-    .domain(timeDomain)
+    .domain(xDomain)
     .range([height * 0.21, height * 0.41]);
-  $: strokeWidthScale = scaleLinear().domain(timeDomain).range([0.3, 0.65]);
+  $: strokeWidthScale = scaleLinear().domain(xDomain).range([0.3, 0.65]);
   $: angleScale = scaleLinear().domain([0, 365]).range([0, 360]);
   // $: console.log("data", data);
 
@@ -117,7 +117,7 @@
     };
   });
   $: years = timeYear
-    .range(timeYear.floor(timeDomain[0]), timeDomain[1])
+    .range(timeYear.floor(xDomain[0]), xDomain[1])
     .map((year) => {
       const r = yearRadiusScale(year);
       const { x, y } = getPositionFromDistanceAndAngle(r, 360 / 4);
@@ -135,19 +135,18 @@
       ((width < height ? width : height) / 2) * 0.4,
       (width < height ? width : height) / 2,
     ]}
-    xDomain={timeDomain}
+    x="date"
+    {xDomain}
     xPadding={[20, 20]}
+    y="doy"
     yRange={[0 + angleRotate, 360 + angleRotate]}
     yDomain={[0, 365]}
-    z="fwi"
+    {z}
+    {zDomain}
     {data}
   >
     <Svg>
-      <ArcSvgSpiral
-        {data}
-        metricAccessor={(d) => +d["fwi"]}
-        timeAccessor={(d) => d["date"]}
-      />
+      <ArcSvgSpiral {data} {colorScale} />
 
       <!-- {#each data || [] as d, i} -->
       <!--   <path -->
