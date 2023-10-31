@@ -8,7 +8,7 @@ your x-scale is an ordinal scale. If so, it will place the markers in the middle
   import { scaleLinear } from "d3-scale";
   import { ticks } from "d3-array";
 
-  const { xScale, yRange, zDomain } = getContext("LayerCake");
+  const { zDomain } = getContext("LayerCake");
 
   /** @type {Number} [width=100] - Width of the parrent div */
   export let width = 100;
@@ -25,20 +25,16 @@ your x-scale is an ordinal scale. If so, it will place the markers in the middle
   /** @type {Boolean} [snapTicks=false] - Instead of centering the text on the first and the last items, align them to the edges of the chart. */
   export let snapTicks = false;
 
-  /** @type {Function} [formatTick=d => d] - A function that passes the current tick value and expects a nicely formatted value in return. */
-  export let formatTick = (d) => d;
-
   /** @type {Number} [xTick=0] - How far over to position the text marker. */
   export let xTick = 0;
 
-  /** @type {Number} [yTick=16] - The distance from the baseline to place each tick value. */
-  export let yTick = 16;
+  /** @type {Number} [tickNumber=5] - How far over to position the text marker. */
+  export let tickNumber = 5;
 
   $: axisScale = scaleLinear([0, $zDomain[1]], [0, width]);
   $: isBandwidth = typeof axisScale.bandwidth === "function";
-  $: console.log("isBandwidth", isBandwidth);
 
-  $: xTicks = ticks($zDomain[0], $zDomain[1], 6);
+  $: xTicks = ticks($zDomain[0], $zDomain[1], tickNumber);
   $: tickVals = Array.isArray(xTicks)
     ? xTicks
     : isBandwidth
