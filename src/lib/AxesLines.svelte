@@ -44,7 +44,6 @@
       endAngle,
     };
   });
-
   $: getArc = (d) => {
     const distance = $xScale($xDomain[1]);
     const startCoords = cartesianFromPolar(d.end, d.startAngle);
@@ -66,7 +65,7 @@
 </script>
 
 <g transform="translate({$width / 2}, {$height / 2})">
-  {#each monthProps as month, i}
+  {#each monthProps as month}
     <line
       x1={xFromPolar(month.start, month.startAngle)}
       y1={yFromPolar(month.start, month.startAngle)}
@@ -74,6 +73,7 @@
       y2={yFromPolar(month.end, month.startAngle)}
       stroke="#ccc"
       stroke-width="2"
+      stroke-dasharray="2 2"
       fill="none"
     />
     <path id={month.i} fill="none" d={getArc(month)} />
