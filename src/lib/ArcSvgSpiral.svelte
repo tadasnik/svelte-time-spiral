@@ -1,15 +1,12 @@
 <script>
   import { getContext } from "svelte";
-  import { scaleLinear } from "d3-scale";
-  import { extent, range } from "d3-array";
-  import { interpolateHclLong } from "d3-interpolate";
   import { fade } from "svelte/transition";
   import { xFromPolar, yFromPolar } from "./utils.js";
+  import { cartesianFromPolar } from "./utils.js";
 
   export let data = [];
-  export let colorScale;
 
-  const { width, height, zDomain, yScale, zScale, y, z, xGet, zGet } =
+  const { width, height, zScale, xScale, yScale, y, z, xGet } =
     getContext("LayerCake");
 
   $: distanceBetweenYears = (startUT, endUT) => {
@@ -18,6 +15,7 @@
     return Math.abs(endDist - startDist);
   };
 
+  // TODO move this to central logic component or main?
   $: cycleDistance = distanceBetweenYears(data[0], data[365]) * 0.9;
 
   $: getArc = (d) => {
@@ -38,9 +36,6 @@
       yFromPolar(distance, endAngle),
     ].join(" ");
   };
-  $: console.log("zScale", $zGet(data[0]));
-  $: console.log("colorScale", colorScale($z(data[0])));
-  // $: console.log("zDomain", $zDomain);
 </script>
 
 <g transform="translate({$width / 2}, {$height / 2})">
@@ -51,7 +46,7 @@
       class="transition"
       in:fade={{ delay: i / 3 }}
       d={getArc(d)}
-      stroke={colorScale($z(d))}
+      stroke={$zScale($z(d))}
       stroke-width={cycleDistance}
     />
   {/each}
